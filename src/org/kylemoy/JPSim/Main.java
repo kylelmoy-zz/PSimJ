@@ -1,5 +1,7 @@
 package org.kylemoy.JPSim;
 
+import java.util.List;
+
 import org.kylemoy.JPSim.JPSim.JPSimRunnable;
 
 public class Main {
@@ -24,10 +26,10 @@ public class Main {
 				comm.send(0, list);
 			}
 			*/
-			String str = "";
-			if (comm.rank() == 0) str = "Hello World!";
-			str = comm.one2all_broadcast(0, str, String.class);
-			System.out.println(comm.rank() +": " + str);
+			String str = "Hello World!";
+			List<String> list = comm.all2all_broadcast(str, String.class);
+			for (String s : list)
+				System.out.println(comm.rank() + " :" + s);
 		}
 	}
 	public static void main(String[] args) {

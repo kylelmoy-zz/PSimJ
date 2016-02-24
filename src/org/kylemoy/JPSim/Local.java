@@ -76,11 +76,11 @@ public class Local implements JPSim {
 	private int rank;
 	private int nprocs;
 	
-	private Local(int r, int n, PipedInputStream[] _is, PipedOutputStream[] _os) {
+	private Local(int r, int n, PipedInputStream[] i, PipedOutputStream[] o) {
 		rank = r;
 		nprocs = n;
-		is = _is;
-		os = _os;
+		is = i;
+		os = o;
 	}
 	
 	@Override
@@ -149,15 +149,39 @@ public class Local implements JPSim {
 	}
 
 	@Override
-	public <T extends Serializable> T all2one_collect(int dest, T data) {
-		// TODO Auto-generated method stub
+	public <T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type) {
+		if (rank() != dest) {
+			send(dest, data);
+		} else {
+			List<T> list = new ArrayList<T>();
+			for (int i = 0; i < nprocs(); i++) {
+				if (i != rank()) {
+					list.add(recv(i, type));
+				} else {
+					list.add(data);
+				}
+			}
+			return list;
+		}
 		return null;
 	}
 
 	@Override
-	public <T extends Serializable> T all2all_broadcast(T data) {
-		// TODO Auto-generated method stub
-		return null;
+	public <T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type) {
+		for (int i = 0; i < nprocs(); i++) {
+			if (i != rank()) {
+				send(i, data);
+			}
+		}
+		List<T> list = new ArrayList<T>();
+		for (int i = 0; i < nprocs(); i++) {
+			if (i != rank()) {
+				list.add(recv(i, type));
+			} else {
+				list.add(data);
+			}
+		}
+		return list;
 	}
 
 

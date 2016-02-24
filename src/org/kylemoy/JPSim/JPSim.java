@@ -1,6 +1,7 @@
 package org.kylemoy.JPSim;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  *
@@ -47,13 +48,13 @@ public interface JPSim {
 	 * @param data
 	 * @return
 	 */
-	<T extends Serializable> T all2one_collect(int dest, T data);
+	<T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type);
 	
 	/**
 	 * @param data
 	 * @return
 	 */
-	<T extends Serializable> T all2all_broadcast(T data);
+	<T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type);
 	//all2one_reduce
 	//all2all_reduce
 	
