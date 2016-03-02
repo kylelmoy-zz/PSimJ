@@ -12,21 +12,35 @@ import java.util.List;
 
 public class Host {
 	public static void main(String[] args) throws Exception {
+		if (args.length < 2) {
+			System.out.println("Invaling parameters. Usage: TO DO");
+			return;
+		}
 		int port = Integer.parseInt(args[0]);
 		String keyFile = args[1];
+		int wwwPort = Integer.parseInt(args[2]);
+		String rootDir = args[3];
+		
 		byte[] key = Files.readAllBytes(Paths.get(keyFile));
 		
 		NodePool pool = new NodePool(port, key);
 		pool.start();
+
+		System.out.println("Running web UI on port " + wwwPort);
+		WebUI www = new WebUI(wwwPort, rootDir, pool);
+		www.start();
+		
 		
 		boolean run = true;
 		while (run) {
 			Thread.sleep(1000);
 		}
+		
 		pool.stop();
+		www.stop();
 	}
 	
-	private static class NodeHandle {
+	public static class NodeHandle {
 		public final Socket socket;
 		public final DataOutputStream os;
 		public final DataInputStream is;
@@ -37,7 +51,7 @@ public class Host {
 		}
 	}
 	
-	private static class NodePool implements java.lang.Runnable {
+	public static class NodePool implements java.lang.Runnable {
 		private final int port;
 		private final byte[] key;
 		
