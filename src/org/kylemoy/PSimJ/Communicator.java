@@ -1,4 +1,4 @@
-package org.kylemoy.JPSim;
+package org.kylemoy.PSimJ;
 
 import java.io.Serializable;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 /**
  *
  */
-public interface JPSim {
+public interface Communicator {
 	
 	/**
 	 * @return the rank of this node
@@ -57,10 +57,4 @@ public interface JPSim {
 	<T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type);
 	//all2one_reduce
 	//all2all_reduce
-	
-	public class JPSimRunnable {
-		void run(JPSim communicator){
-			System.out.println("Forget something?");
-		}
-	}
 }

@@ -1,4 +1,4 @@
-package org.kylemoy.JPSim;
+package org.kylemoy.PSimJ;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 /**
  *
  */
-public class Local implements JPSim {
+public class LocalCommunicator implements Communicator {
 	
 	/**
 	 * Creates and runs simulated parallel processes
@@ -22,12 +22,12 @@ public class Local implements JPSim {
 	 * @param topology the simulated network topology of the system
 	 * @param type the Java class containing the code to be run
 	 */
-	public static void instantiate(int n, JPSimTopology topology, Class<? extends JPSimRunnable> type) {
+	public static void init(int n, Topology topology, Class<? extends Runnable> type) {
 		PipedOutputStream[][] os;
 		PipedInputStream[][] is;
 		
 		//Instantiate n objects of Type type
-		List<JPSimRunnable> procs = new ArrayList<JPSimRunnable>();
+		List<Runnable> procs = new ArrayList<Runnable>();
 		for (int i = 0; i < n; i++) {
 			try {
 				procs.add(type.newInstance());
@@ -59,9 +59,9 @@ public class Local implements JPSim {
 		//Run type objects on separate threads
 		ExecutorService executor = Executors.newFixedThreadPool(n);
 		for (int i = 0; i < n; i++) {
-			JPSimRunnable runnable = procs.get(i);
-			Local comm = new Local(i, n, is[i], os[i]);
-			executor.submit(new Runnable() {
+			Runnable runnable = procs.get(i);
+			LocalCommunicator comm = new LocalCommunicator(i, n, is[i], os[i]);
+			executor.submit(new java.lang.Runnable() {
 	            @Override
 	            public void run() {
 	            	runnable.run(comm);
@@ -76,7 +76,7 @@ public class Local implements JPSim {
 	private int rank;
 	private int nprocs;
 	
-	private Local(int r, int n, PipedInputStream[] i, PipedOutputStream[] o) {
+	private LocalCommunicator(int r, int n, PipedInputStream[] i, PipedOutputStream[] o) {
 		rank = r;
 		nprocs = n;
 		is = i;
