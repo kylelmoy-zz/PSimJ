@@ -43,7 +43,7 @@ public class NodePool implements java.lang.Runnable {
 					// Verify key before adding to pool
 					if (verifyKey(readKey)) {
 						nodePool.add(node);
-						System.out.println(nodeSocket.getRemoteSocketAddress() + " added to pool. Total nodes: " + nodePool.size());
+						System.out.println(nodeSocket.getInetAddress().getHostAddress() + " added to pool. Total nodes: " + nodePool.size());
 					} else {
 						node.socket.close();
 					}

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.kylemoy.PSimJ.PSimJRMIServer.ParallelTask;
+
 /**
  *
  */
@@ -26,7 +28,7 @@ public class LocalCommunicator implements Communicator {
 	public static void init(int n, Topology topology, Class<? extends PSimJRMIServer> type) {
 		PipedOutputStream[][] os;
 		PipedInputStream[][] is;
-		
+
 		//Instantiate n objects of Type type
 		List<PSimJRMIServer> procs = new ArrayList<PSimJRMIServer>();
 		for (int i = 0; i < n; i++) {
@@ -36,7 +38,6 @@ public class LocalCommunicator implements Communicator {
 				e.printStackTrace();
 			}
 		}
-		
 		//Create communication pipes
 		try {
 			os = new PipedOutputStream[n][n];
@@ -61,7 +62,7 @@ public class LocalCommunicator implements Communicator {
 		ExecutorService executor = Executors.newFixedThreadPool(n);
 		for (int i = 0; i < n; i++) {
 			PSimJRMIServer runnable = procs.get(i);
-			LocalCommunicator comm = new LocalCommunicator(i, n, is[i], os[i]);
+			LocalCommunicator comm = new LocalCommunicator(i, n, topology, is[i], os[i]);
 			executor.submit(new java.lang.Runnable() {
 	            @Override
 	            public void run() {
@@ -74,18 +75,24 @@ public class LocalCommunicator implements Communicator {
 	        });
 		}
 		executor.shutdown();
+		
+		//Wait for completion
+		while (!executor.isTerminated()) {
+			try{ Thread.sleep(1000); } catch (Exception e) {}
+		}
 	}
 	
 	private PipedInputStream[] is;
 	private PipedOutputStream[] os;
 	private int rank;
 	private int nprocs;
-	
-	private LocalCommunicator(int r, int n, PipedInputStream[] i, PipedOutputStream[] o) {
+	private Topology topology;
+	private LocalCommunicator(int r, int n, Topology t, PipedInputStream[] i, PipedOutputStream[] o) {
 		rank = r;
 		nprocs = n;
 		is = i;
 		os = o;
+		topology = t;
 	}
 	
 	@Override
@@ -99,14 +106,13 @@ public class LocalCommunicator implements Communicator {
 	}
 
 	@Override
-	public boolean topology() {
-		// TODO Auto-generated method stub
-		return true;
+	public boolean topology(int i, int j) {
+		return topology.valid(i, j);
 	}
 
 	@Override
 	public void send(int dest, Serializable data) {
-		if (os[dest] == null) {
+		if (topology(rank, dest)) {
 			throw new Error("Topology violation! " + rank + " cannot send to " + dest);
 		}
 		try {
@@ -121,7 +127,7 @@ public class LocalCommunicator implements Communicator {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Serializable> T recv(int source, Class<T> type) {
-		if (is[source] == null) {
+		if (topology(source, rank)) {
 			throw new Error("Topology violation! " + rank + " cannot recv from " + source);
 		}
 		try {

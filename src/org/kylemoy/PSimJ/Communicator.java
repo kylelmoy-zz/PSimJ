@@ -21,7 +21,7 @@ public interface Communicator {
 	/**
 	 * @return ???
 	 */
-	boolean topology();
+	boolean topology(int i, int j);
 	
 	/**
 	 * Sends data to another node.
