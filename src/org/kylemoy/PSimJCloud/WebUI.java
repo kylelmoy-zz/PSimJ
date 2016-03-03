@@ -18,9 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.kylemoy.PSimJCloud.Host.NodeHandle;
-import org.kylemoy.PSimJCloud.Host.NodePool;
-
 /**
  * Simple web server.
  * 

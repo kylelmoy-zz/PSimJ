@@ -7,6 +7,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.rmi.Naming;
+
+import org.kylemoy.PSimJ.PSimJRMIServer;
 
 public class Node {
 	public static void main(String[] args) throws Exception {
@@ -52,6 +55,17 @@ public class Node {
 									return;
 								}
 							}
+							
+							// Receive RMI server name from host
+							byte[] buf = new byte[size];
+							is.readFully(buf);
+							String rmiName = new String(buf);
+							
+							// Instantiate remote class via literal magic
+							PSimJRMIServer rmiClass = (PSimJRMIServer)Naming.lookup(rmiName);
+							
+							//rmiClass.run(communicator);
+							
 							// Done
 						}
 					} catch (IOException e) {
