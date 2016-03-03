@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJ;
+package psimj;
 
 import java.io.Serializable;
 import java.util.List;
@@ -37,6 +37,7 @@ public interface Communicator {
 	<T extends Serializable> T recv(int source, Class<T> type);
 	
 	/**
+	 * Broadcast data from a source node to all nodes
 	 * @param source
 	 * @param data
 	 * @return
@@ -44,6 +45,7 @@ public interface Communicator {
 	<T extends Serializable> T one2all_broadcast(int source, T data, Class<T> type);
 	
 	/**
+	 * Broadcast data from all nodes to a destination node
 	 * @param dest
 	 * @param data
 	 * @return
@@ -51,10 +53,14 @@ public interface Communicator {
 	<T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type);
 	
 	/**
+	 * Broadcast data from all nodes to all other nodes
 	 * @param data
 	 * @return
 	 */
 	<T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type);
-	//all2one_reduce
-	//all2all_reduce
+
+	/**
+	 * Close/finalize all communications
+	 */
+	void close();
 }

@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJCloud;
+package psimj;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -7,32 +7,35 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NodePool implements java.lang.Runnable {
+class NodeSocketPool implements java.lang.Runnable {
 	private final int port;
 	private final byte[] key;
 	
 	private boolean run;
-	private List<NodeHandle> nodePool;
+	private List<NodeSocket> nodePool;
 	private Thread thread;
 	private ServerSocket serverSocket;
 	
-	public NodePool(int port, byte[] key) {
+	public NodeSocketPool(int port, byte[] key) {
 		this.key = key;
 		this.port = port;
-		nodePool = new ArrayList<NodeHandle>();
+		nodePool = new ArrayList<NodeSocket>();
 	}
 	
 	@Override
 	public void run() {
 		try {
 			serverSocket = new ServerSocket(port);
-			
 			run = true;
+			
+			//This creates a new thread to call heartbeat() every 500 ms
+			(new Thread() { public void run() { while(run){heartbeat(); try{Thread.sleep(500);}catch(Exception e){}}}}).start();
+			
 			// Listen for new nodes
 			while (run) {
 				try {
 					Socket nodeSocket = serverSocket.accept();
-					NodeHandle node = new NodeHandle(nodeSocket);
+					NodeSocket node = new NodeSocket(nodeSocket);
 					
 					// Get key from node
 					node.socket.setSoTimeout(1000);
@@ -43,7 +46,6 @@ public class NodePool implements java.lang.Runnable {
 					// Verify key before adding to pool
 					if (verifyKey(readKey)) {
 						nodePool.add(node);
-						System.out.println(nodeSocket.getInetAddress().getHostAddress() + " added to pool. Total nodes: " + nodePool.size());
 					} else {
 						node.socket.close();
 					}
@@ -58,7 +60,7 @@ public class NodePool implements java.lang.Runnable {
 		}
 	}
 	
-	public List<NodeHandle> getNodes() {
+	public List<NodeSocket> getNodes() {
 		heartbeat();
 		return nodePool;
 	}
@@ -96,12 +98,11 @@ public class NodePool implements java.lang.Runnable {
 		synchronized (nodePool) {
 			if (nodePool.size() > 0) {
 				for (int i = 0; i < nodePool.size(); i++) {
-					NodeHandle node = nodePool.get(i);
+					NodeSocket node = nodePool.get(i);
 					try {
 						new DataOutputStream(node.os).writeInt(0);
 					} catch (Exception e) {
 						nodePool.remove(i--);
-						System.out.println(node.socket.getRemoteSocketAddress() + " removed from pool. Total nodes: " + nodePool.size());
 					}
 				}
 			}

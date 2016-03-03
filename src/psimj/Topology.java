@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJ;
+package psimj;
 
 public interface Topology {
 	boolean valid(int i, int j);

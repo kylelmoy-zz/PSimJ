@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJ;
+package psimj;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -6,7 +6,6 @@ import java.io.ObjectOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -21,17 +20,17 @@ public class LocalCommunicator implements Communicator {
 	 * Creates and runs simulated parallel processes
 	 * @param n the number of parallel processes
 	 * @param topology the simulated network topology of the system
-	 * @param type the Java class containing the code to be run
+	 * @param task the Java class containing the code to be run
 	 */
-	public static void init(int n, Topology topology, Class<? extends PSimJRunnable> type) {
+	public static void init(int n, Topology topology, Class<? extends Task> task) {
 		PipedOutputStream[][] os;
 		PipedInputStream[][] is;
 
 		//Instantiate n objects of Type type
-		List<PSimJRunnable> procs = new ArrayList<PSimJRunnable>();
+		List<Task> procs = new ArrayList<Task>();
 		for (int i = 0; i < n; i++) {
 			try {
-				procs.add(type.newInstance());
+				procs.add(task.newInstance());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -59,7 +58,7 @@ public class LocalCommunicator implements Communicator {
 		//Run type objects on separate threads
 		ExecutorService executor = Executors.newFixedThreadPool(n);
 		for (int i = 0; i < n; i++) {
-			PSimJRunnable runnable = procs.get(i);
+			Task runnable = procs.get(i);
 			LocalCommunicator comm = new LocalCommunicator(i, n, topology, is[i], os[i]);
 			executor.submit(new java.lang.Runnable() {
 	            @Override
@@ -189,6 +188,9 @@ public class LocalCommunicator implements Communicator {
 		return list;
 	}
 
-
-
+	@Override
+	public void close() {
+		is = null;
+		os = null;
+	}
 }

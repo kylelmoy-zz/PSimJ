@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJ;
+package psimj;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -6,26 +6,35 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.kylemoy.PSimJCloud.Node;
-import org.kylemoy.PSimJCloud.NodeHandle;
-
 public class NetworkCommunicator implements Communicator {
 	public static final int ALL_NODES = Integer.MIN_VALUE;
 	public static final int PORT_RANGE_START = 8195;
-	private NodeHandle[] nodes;
+	private NodeSocket[] nodes;
 	private int port;
 	private int rank;
 	private int nprocs;
 	private Topology topology;
-	public static void init(String poolHost, int poolPort, int n, Topology topology, Class<? extends PSimJRunnable> type) throws IOException, NotBoundException, InstantiationException, IllegalAccessException {
+	
+	/**
+	 * Sets up a distributed environment using a PSimJ pool
+	 * @param poolHost address of the PSimJ pool
+	 * @param poolPort listening port of the PSimJ pool
+	 * @param n number of processors
+	 * @param topology topology of the network, although this should always be a Switch
+	 * @param task the task to be parallelized
+	 * @throws IOException
+	 * @throws NotBoundException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
+	public static void init(String poolHost, int poolPort, int n, Topology topology, Class<? extends Task> task) throws IOException, NotBoundException, InstantiationException, IllegalAccessException {
 		
 		//Connect to pool host
-		NodeHandle host = new NodeHandle(poolHost, poolPort);
+		NodeSocket host = new NodeSocket(poolHost, poolPort);
 		while (!host.isReady()) {
 			try {Thread.sleep(1000);} catch (InterruptedException e) {}
 		}
@@ -54,13 +63,13 @@ public class NetworkCommunicator implements Communicator {
 		Communicator comm = new NetworkCommunicator(ipList, rank, topology);
 		
 		// Build class definition from runnable
-		SerializeableClassDefinition cls = SerializeableClassDefinition.fromClass(type);
+		SerializedClass cls = SerializedClass.fromClass(task);
 		
 		// Broadcast class definition
-		cls = comm.one2all_broadcast(0, cls, SerializeableClassDefinition.class);
+		cls = comm.one2all_broadcast(0, cls, SerializedClass.class);
 		
 		// Instantiate class
-		PSimJRunnable instance = type.newInstance();
+		Task instance = task.newInstance();
 		
 		// Go
 		instance.run(comm);
@@ -68,18 +77,18 @@ public class NetworkCommunicator implements Communicator {
 		System.out.println("Done!");
 	}
 	public NetworkCommunicator(List<String> ips, int rank, Topology topology) throws IOException {
-		nodes = new NodeHandle[ips.size()];
+		nodes = new NodeSocket[ips.size()];
 		this.port = PORT_RANGE_START + rank;
 		this.rank = rank;
 		nprocs = ips.size();
 		this.topology = topology;
 		
 		// Create dummy connection with self
-		nodes[rank] = new NodeHandle();
+		nodes[rank] = new NodeSocket();
 		
 		// Initiate connections with all ranks below me
 		for (int i = rank + 1; i < ips.size(); i++) {
-			nodes[i] = new NodeHandle(ips.get(i), PORT_RANGE_START + i, rank);
+			nodes[i] = new NodeSocket(ips.get(i), PORT_RANGE_START + i, rank);
 		}
 		
 		// Accept connections from all ranks above me
@@ -90,7 +99,7 @@ public class NetworkCommunicator implements Communicator {
 		while (!isReady()) {
 			try {
 				Socket nodeSocket = serverSocket.accept();
-				NodeHandle node = new NodeHandle(nodeSocket);
+				NodeSocket node = new NodeSocket(nodeSocket);
 				int nRank = node.is.readInt();
 				nodes[nRank] = node;
 			} catch (IOException e) {
@@ -101,7 +110,7 @@ public class NetworkCommunicator implements Communicator {
 	}
 
 	public boolean isReady() {
-		for (NodeHandle node : nodes) {
+		for (NodeSocket node : nodes) {
 			if (node == null || !node.isReady()) {
 				return false;
 			}
@@ -138,6 +147,7 @@ public class NetworkCommunicator implements Communicator {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Serializable> T recv(int source, Class<T> type) {
 		if (!topology(source, rank)) {
@@ -206,6 +216,13 @@ public class NetworkCommunicator implements Communicator {
 			}
 		}
 		return list;
+	}
+	@Override
+	public void close() {
+		for (NodeSocket node : nodes) {
+			node.close();
+		}
+		nodes = null;
 	}
 
 }

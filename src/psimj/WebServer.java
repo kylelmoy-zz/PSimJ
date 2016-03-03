@@ -1,4 +1,4 @@
-package org.kylemoy.PSimJCloud;
+package psimj;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -24,16 +24,16 @@ import java.util.List;
  * @author Kyle Moy
  *
  */
-public class WebUI implements java.lang.Runnable {
+class WebServer implements java.lang.Runnable {
 	private static volatile boolean run = true;
 	public int port;
 	public String root;
 	
 	ServerSocket serverSocket;
 	Thread thread;
-	NodePool pool;
+	NodeSocketPool pool;
 	
-	public WebUI(int port, String root, NodePool pool) {
+	public WebServer(int port, String root, NodeSocketPool pool) {
 		this.port = port;
 		this.root = root;
 		this.pool = pool;
@@ -81,8 +81,8 @@ class ClientHandler extends Thread {
 	private InputStream is;
 	private OutputStream os;
 	private String root;
-	private NodePool pool;
-	ClientHandler (Socket socket, String root, NodePool pool) throws IOException {
+	private NodeSocketPool pool;
+	ClientHandler (Socket socket, String root, NodeSocketPool pool) throws IOException {
 		this.socket = socket;
 		this.root = root;
 		this.pool = pool;
@@ -117,13 +117,13 @@ class ClientHandler extends Thread {
 					out.println("<html><body><h1>403 FORBIDDEN</h1></body></html>");
 				} else if (req.contains(".json")){
 					//Print some JSON
-					List<NodeHandle> nodes = pool.getNodes();
+					List<NodeSocket> nodes = pool.getNodes();
 					String json = "";
 					json += "{";
 					json += "\"nodes\":";
 					json += "[";
 					String nodelist = "";
-					for (NodeHandle node : nodes) {
+					for (NodeSocket node : nodes) {
 						nodelist += ",\"" + node.socket.getRemoteSocketAddress() + "\"";
 					}
 					if (nodelist.length() > 0) json += nodelist.substring(1);
