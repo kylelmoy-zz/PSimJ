@@ -30,4 +30,10 @@ public interface Topology {
 			return i==(int)((j-1)/2) || j==(int)((i-1)/2);
 		}
 	}
+	
+	public static class TopologyViolationException extends Exception {
+		public TopologyViolationException (String message) {
+			super(message);
+		}
+	}
 }

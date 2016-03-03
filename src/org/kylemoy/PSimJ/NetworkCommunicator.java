@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,26 +22,25 @@ public class NetworkCommunicator implements Communicator {
 	private int rank;
 	private int nprocs;
 	private Topology topology;
-	public static void init(String poolHost, int poolPort, int n, Topology topology, Class<? extends PSimJRMIServer> type) throws IOException, NotBoundException {
+	public static void init(String poolHost, int poolPort, int n, Topology topology, Class<? extends PSimJRunnable> type) throws IOException, NotBoundException, InstantiationException, IllegalAccessException {
 		
 		//Connect to pool host
 		NodeHandle host = new NodeHandle(poolHost, poolPort);
 		while (!host.isReady()) {
 			try {Thread.sleep(1000);} catch (InterruptedException e) {}
 		}
-		System.out.println("Connected to pool.");
 		
-		//Request n nodes
+		// Request n nodes from pool
 		host.os.writeInt(n);
 		
+		// Pool responds with rank - should be 0
 		int rank = host.is.readInt();
 		if (rank != 0) {
 			System.err.println("Insufficient nodes for pool size " + host);
 			return;
 		}
-
-		System.out.println("Pool accepted request.");
-		//Receive list of node ips from pool
+		
+		// Receive node info from pool
 		List<String> ipList = new ArrayList<String>();
 		int size = host.is.readInt();
 		for (int i = 0; i < size; i++) {
@@ -50,58 +50,54 @@ public class NetworkCommunicator implements Communicator {
 			ipList.add(new String(buf));
 		}
 
-		System.out.println("Creating communicator.");
-		//Create communicator
+		// Initialize communications with all nodes
 		Communicator comm = new NetworkCommunicator(ipList, rank, topology);
 		
-		//Build RMI address
-		String rmiAddress = "rmi://" + ipList.get(0) + "/" + type.getName();
-
-		System.out.println("Broadcasting.");
-		//Broadcast to all nodes
-		rmiAddress = comm.one2all_broadcast(0, rmiAddress, String.class);
+		// Build class definition from runnable
+		SerializeableClassDefinition cls = SerializeableClassDefinition.fromClass(type);
 		
-		System.out.println(rmiAddress);
+		// Broadcast class definition
+		cls = comm.one2all_broadcast(0, cls, SerializeableClassDefinition.class);
+		
+		// Instantiate class
+		PSimJRunnable instance = type.newInstance();
+		
+		// Go
+		instance.run(comm);
 		
 		System.out.println("Done!");
 	}
-	public NetworkCommunicator(List<String> ips, int rank, Topology topology) {
+	public NetworkCommunicator(List<String> ips, int rank, Topology topology) throws IOException {
 		nodes = new NodeHandle[ips.size()];
 		this.port = PORT_RANGE_START + rank;
 		this.rank = rank;
 		nprocs = ips.size();
 		this.topology = topology;
 		
-		//Create dummy connection with self
+		// Create dummy connection with self
 		nodes[rank] = new NodeHandle();
 		
-		//Initiate connections with all ranks below me
+		// Initiate connections with all ranks below me
 		for (int i = rank + 1; i < ips.size(); i++) {
 			nodes[i] = new NodeHandle(ips.get(i), PORT_RANGE_START + i, rank);
 		}
 		
-		//Accept connections from all ranks above me
-		try {
-			ServerSocket serverSocket = new ServerSocket(port);
-			serverSocket.setSoTimeout(500);
-			// Listen for new nodes
-			while (!isReady()) {
-				try {
-					Socket nodeSocket = serverSocket.accept();
-					NodeHandle node = new NodeHandle(nodeSocket);
-					int nRank = node.is.readInt();
-					nodes[nRank] = node;
-					System.out.println("Successfully connected to node " + nRank);
-				} catch (IOException e) {
-					// Timed out, try again
-				}
-			}
-			serverSocket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		// Accept connections from all ranks above me
+		ServerSocket serverSocket = new ServerSocket(port);
+		serverSocket.setSoTimeout(500);
 		
-		System.out.println("Done!");
+		// Listen for new nodes
+		while (!isReady()) {
+			try {
+				Socket nodeSocket = serverSocket.accept();
+				NodeHandle node = new NodeHandle(nodeSocket);
+				int nRank = node.is.readInt();
+				nodes[nRank] = node;
+			} catch (IOException e) {
+				// Timed out, try again
+			}
+		}
+		serverSocket.close();
 	}
 
 	public boolean isReady() {
@@ -136,7 +132,7 @@ public class NetworkCommunicator implements Communicator {
 		try {
 			ObjectOutputStream o = new ObjectOutputStream(nodes[dest].os);
 			o.writeObject(data);
-			o.close();
+			o.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

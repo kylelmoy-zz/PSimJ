@@ -7,14 +7,15 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.kylemoy.PSimJ.Communicator;
 import org.kylemoy.PSimJ.NetworkCommunicator;
-import org.kylemoy.PSimJ.PSimJRMIServer;
+import org.kylemoy.PSimJ.PSimJClassLoader;
+import org.kylemoy.PSimJ.PSimJRunnable;
+import org.kylemoy.PSimJ.SerializeableClassDefinition;
 import org.kylemoy.PSimJ.Topology;
 
 public class Node {
@@ -58,71 +59,53 @@ public class Node {
 			while (true) {
 				System.out.println("Waiting for work.");
 
-				// Wait for go time!
+				// Wait for directives from pool
 				int rank;
 				while (true) {
 					rank = is.readInt();
 					if (rank > 0) {
-						// IT'S GO TIME WOOOO
+						// It's go time!
 						break;
 					} else if (rank < 0) {
-						// Time to die :c
+						// Quit
 						return;
 					}
 				}
-
-				// Receive ips of all nodes
-				List<String> ipList = new ArrayList<String>();
-				int size = is.readInt();
-				for (int i = 0; i < size; i++) {
-					int bufSize = is.readInt();
-					byte[] buf = new byte[bufSize];
-					is.readFully(buf);
-					ipList.add(new String(buf));
+				
+				try {
+					// Receive ips of all nodes
+					List<String> ipList = new ArrayList<String>();
+					int size = is.readInt();
+					for (int i = 0; i < size; i++) {
+						int bufSize = is.readInt();
+						byte[] buf = new byte[bufSize];
+						is.readFully(buf);
+						ipList.add(new String(buf));
+					}
+					
+					// Initialize communications with all nodes
+					Communicator comm = new NetworkCommunicator(ipList, rank, new Topology.Switch());
+					
+					// Receive class definition from node 0
+					SerializeableClassDefinition cls = null;
+					cls = comm.one2all_broadcast(0, cls, SerializeableClassDefinition.class);
+					
+					// Build class from class definition
+					PSimJClassLoader classLoader = new PSimJClassLoader(PSimJClassLoader.class.getClassLoader());
+					Class type = classLoader.loadClass(cls);
+					
+					// Instantiate class
+					PSimJRunnable instance = (PSimJRunnable) type.newInstance();
+					
+					// Go go go!
+					instance.run(comm);
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				} catch (InstantiationException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
 				}
-				
-				System.out.println("I am rank " + rank);
-
-				Communicator comm = new NetworkCommunicator(ipList, rank, new Topology.Switch());
-				
-				//Build RMI address
-				String rmiAddress = "";
-				
-				//Broadcast to all nodes
-				rmiAddress = comm.one2all_broadcast(0, rmiAddress, String.class);
-				
-				System.out.println(rmiAddress);
-				
-				System.out.println("Done!");
-				/*
-				// Receive RMI server name from host
-				byte[] buf = new byte[size];
-				is.readFully(buf);
-				String rmiName = new String(buf);
-				
-				// Receive ips of other nodes
-				List<String> ipList = new ArrayList<String>();
-				size = is.readInt();
-				for (int i = 0; i < size; i++) {
-					int bufSize = is.readInt();
-					buf = new byte[bufSize];
-					is.readFully(buf);
-					ipList.add(new String(buf));
-				}
-				
-				// Get this node's rank, although technically this could be determined from the node list
-				int rank = is.readInt();
-				
-				// Instantiate remote class via literal magic
-				PSimJRMIServer rmiClass = (PSimJRMIServer)Naming.lookup(rmiName);
-
-				// Instantiate communicator and establish links to other nodes
-				Communicator comm = new NetworkCommunicator(ipList, hostPort, rank);
-				
-				// Execute parallel task
-				rmiClass.run(comm);
-				// Done
-				*/
 			}
 		} catch (IOException e) {
 			System.out.println("Connection to " + hostAddress + " lost.");

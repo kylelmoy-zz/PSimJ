@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.kylemoy.PSimJ.PSimJRMIServer.ParallelTask;
-
 /**
  *
  */
@@ -25,12 +23,12 @@ public class LocalCommunicator implements Communicator {
 	 * @param topology the simulated network topology of the system
 	 * @param type the Java class containing the code to be run
 	 */
-	public static void init(int n, Topology topology, Class<? extends PSimJRMIServer> type) {
+	public static void init(int n, Topology topology, Class<? extends PSimJRunnable> type) {
 		PipedOutputStream[][] os;
 		PipedInputStream[][] is;
 
 		//Instantiate n objects of Type type
-		List<PSimJRMIServer> procs = new ArrayList<PSimJRMIServer>();
+		List<PSimJRunnable> procs = new ArrayList<PSimJRunnable>();
 		for (int i = 0; i < n; i++) {
 			try {
 				procs.add(type.newInstance());
@@ -61,16 +59,12 @@ public class LocalCommunicator implements Communicator {
 		//Run type objects on separate threads
 		ExecutorService executor = Executors.newFixedThreadPool(n);
 		for (int i = 0; i < n; i++) {
-			PSimJRMIServer runnable = procs.get(i);
+			PSimJRunnable runnable = procs.get(i);
 			LocalCommunicator comm = new LocalCommunicator(i, n, topology, is[i], os[i]);
 			executor.submit(new java.lang.Runnable() {
 	            @Override
 	            public void run() {
-	            	try {
-						runnable.run(comm);
-					} catch (RemoteException e) {
-						e.printStackTrace();
-					}
+					runnable.run(comm);
 	            }
 	        });
 		}
