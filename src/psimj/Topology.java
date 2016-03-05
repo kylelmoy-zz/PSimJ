@@ -32,6 +32,8 @@ public interface Topology {
 	}
 	
 	public static class TopologyViolationException extends Exception {
+		private static final long serialVersionUID = -4632786047092150620L;
+
 		public TopologyViolationException (String message) {
 			super(message);
 		}
