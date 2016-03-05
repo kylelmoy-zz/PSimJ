@@ -231,7 +231,7 @@ public class NetworkCommunicator implements Communicator {
 	}
 	@Override
 	public void close() {
-		List<Integer> list = all2all_broadcast(0, Integer.class);
+		all2all_broadcast(0, Integer.class);
 		for (NodeSocket node : nodes) {
 			node.close();
 		}
