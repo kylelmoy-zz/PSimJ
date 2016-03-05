@@ -28,21 +28,6 @@ public class LocalCommunicator implements Communicator {
 	 * @param task
 	 *            the Java class containing the code to be run
 	 */
-	/*
-	 * public static void init(int n, Topology topology, Class<? extends Task>
-	 * task) { PipedOutputStream[][] os; PipedInputStream[][] is;
-	 * 
-	 * //Create communication pipes try { os = new PipedOutputStream[n][n]; is =
-	 * new PipedInputStream[n][n];
-	 * 
-	 * for (int i = 0; i < n; i++) { for (int j = 0; j < n; j++) { //Assert
-	 * topology if (topology.valid(i, j)) { //Create pipes between valid nodes
-	 * os[i][j] = new PipedOutputStream(); is[j][i] = new
-	 * PipedInputStream(os[i][j]); } } } } catch (Exception e) {
-	 * e.printStackTrace(); return; }
-	 * 
-	 * }
-	 */
 	private static LocalCommunicator[] instances;
 	private PipedInputStream[] is;
 	private PipedOutputStream[] os;
@@ -54,7 +39,7 @@ public class LocalCommunicator implements Communicator {
 		rank = 0;
 		nprocs = n;
 		topology = t;
-		
+
 		PipedOutputStream[][] outputStreams;
 		PipedInputStream[][] inputStreams;
 
@@ -76,7 +61,7 @@ public class LocalCommunicator implements Communicator {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		instances = new LocalCommunicator[n];
 		is = inputStreams[0];
 		os = outputStreams[0];
@@ -136,7 +121,7 @@ public class LocalCommunicator implements Communicator {
 		if (!topology(rank, dest)) {
 			throw new TopologyViolationException("Topology violation! " + rank + " cannot send to " + dest);
 		}
-		
+
 		try {
 			System.out.println("Sending: " + data.getClass().getName());
 			ObjectOutputStream o = new ObjectOutputStream(os[dest]);
@@ -153,11 +138,11 @@ public class LocalCommunicator implements Communicator {
 		if (!topology(source, rank)) {
 			throw new TopologyViolationException("Topology violation! " + rank + " cannot recv from " + source);
 		}
-		
+
 		if (type.isPrimitive()) {
 			type = PrimitiveBoxer.get(type);
 		}
-		
+
 		try {
 			ObjectInputStream i = new ObjectInputStream(is[source]);
 			Object obj = i.readObject();
@@ -174,7 +159,8 @@ public class LocalCommunicator implements Communicator {
 	}
 
 	@Override
-	public <T extends Serializable> T one2all_broadcast(int source, T data, Class<T> type) throws TopologyViolationException {
+	public <T extends Serializable> T one2all_broadcast(int source, T data, Class<T> type)
+			throws TopologyViolationException {
 		if (rank() == source) {
 			for (int i = 0; i < nprocs(); i++) {
 				if (i != rank()) {
@@ -188,7 +174,8 @@ public class LocalCommunicator implements Communicator {
 	}
 
 	@Override
-	public <T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type) throws TopologyViolationException {
+	public <T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type)
+			throws TopologyViolationException {
 		if (rank() != dest) {
 			send(dest, data);
 		} else {

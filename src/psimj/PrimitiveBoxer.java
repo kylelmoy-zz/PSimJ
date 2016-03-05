@@ -6,8 +6,9 @@ import java.util.Map;
 public class PrimitiveBoxer {
 	@SuppressWarnings("rawtypes")
 	static Map<Class, Class> boxTypes = new HashMap<Class, Class>();
+
 	static {
-		//Map primitives to their boxes
+		// Map primitives to their boxes
 		boxTypes.put(boolean.class, Integer.class);
 		boxTypes.put(char.class, Character.class);
 		boxTypes.put(byte.class, Byte.class);
@@ -18,6 +19,7 @@ public class PrimitiveBoxer {
 		boxTypes.put(double.class, Double.class);
 		boxTypes.put(void.class, Void.class);
 	}
+
 	@SuppressWarnings("rawtypes")
 	public static Class get(Class c) {
 		return boxTypes.get(c);

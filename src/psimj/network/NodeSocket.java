@@ -11,8 +11,8 @@ import java.net.UnknownHostException;
 /**
  * Wrapper for sockets.
  * 
- * Holds miscellaneous information about connected machine.
- * Provides different connection methods.
+ * Holds miscellaneous information about connected machine. Provides different
+ * connection methods.
  * 
  * @author Kyle Moy
  *
@@ -21,14 +21,15 @@ public class NodeSocket implements Runnable {
 	public Socket socket;
 	public DataOutputStream os;
 	public DataInputStream is;
-	
+
 	public String ip;
 	public int port;
 	public final int rank;
-	
+
 	/**
 	 * Localhost connection constructor
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	public NodeSocket() throws IOException {
 		PipedInputStream pis = new PipedInputStream();
@@ -38,9 +39,10 @@ public class NodeSocket implements Runnable {
 		ip = "localhost";
 		rank = -1;
 	}
-	
+
 	/**
 	 * Constructor for wrapping a connected Socket
+	 * 
 	 * @param socket
 	 * @throws IOException
 	 */
@@ -51,9 +53,10 @@ public class NodeSocket implements Runnable {
 		ip = socket.getInetAddress().getHostAddress();
 		rank = -1;
 	}
-	
+
 	/**
 	 * Constructor for connection attempt on a separate thread, with rank label
+	 * 
 	 * @param ip
 	 * @param port
 	 * @param rank
@@ -66,6 +69,7 @@ public class NodeSocket implements Runnable {
 
 	/**
 	 * Open a new socket, block while connecting
+	 * 
 	 * @param ip
 	 * @param port
 	 * @param rank
@@ -80,9 +84,10 @@ public class NodeSocket implements Runnable {
 	public static NodeSocket openNow(String ip, int port) {
 		return openNow(ip, port, -1);
 	}
-	
+
 	/**
 	 * Open a new socket, return immediately
+	 * 
 	 * @param ip
 	 * @param port
 	 * @param rank
@@ -97,7 +102,7 @@ public class NodeSocket implements Runnable {
 	public static NodeSocket openLater(String ip, int port) {
 		return openLater(ip, port, -1);
 	}
-	
+
 	@Override
 	public void run() {
 		if (ip == null || socket != null) {
@@ -117,25 +122,27 @@ public class NodeSocket implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	
-	
+
 	/**
 	 * Check that a connection is available
+	 * 
 	 * @return
 	 */
 	public boolean isReady() {
 		return os != null;
 	}
-	
+
 	/**
 	 * Close connection
 	 */
 	public void close() {
 		try {
-			if (socket != null) socket.close();
+			if (socket != null)
+				socket.close();
 			socket = null;
 			is = null;
 			os = null;
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 	}
 }

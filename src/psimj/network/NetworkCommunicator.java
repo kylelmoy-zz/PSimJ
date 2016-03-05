@@ -20,21 +20,22 @@ public class NetworkCommunicator implements Communicator {
 	private int port;
 	private int rank;
 	private int nprocs;
-	
+
 	public NetworkCommunicator(int n, String host, int port) throws IOException {
-		//Connect to pool host
+		// Connect to pool host
 		NodeSocket hostSocket = NodeSocket.openNow(host, port);
-		
+
 		// Request n nodes from pool
 		hostSocket.os.writeInt(n);
-		
-		// Pool responds with rank - should be 0, negative response means failure
+
+		// Pool responds with rank - should be 0, negative response means
+		// failure
 		rank = hostSocket.is.readInt();
 		if (rank != 0) {
 			System.err.println("Insufficient nodes for pool size " + hostSocket);
 			return;
 		}
-		
+
 		// Receive node info from pool
 		List<String> ipList = new ArrayList<String>();
 		int size = hostSocket.is.readInt();
@@ -44,32 +45,32 @@ public class NetworkCommunicator implements Communicator {
 			hostSocket.is.readFully(buf);
 			ipList.add(new String(buf));
 		}
-		
+
 		connectNodes(ipList);
 	}
-	
+
 	public NetworkCommunicator(List<String> ipList, int rank) throws IOException {
 		this.rank = rank;
 		connectNodes(ipList);
 	}
-	
+
 	private void connectNodes(List<String> ipList) throws IOException {
 		nodes = new NodeSocket[ipList.size()];
 		this.port = PORT_RANGE_START + rank;
 		nprocs = ipList.size();
-		
+
 		// Create dummy connection with self
 		nodes[rank] = new NodeSocket();
-		
+
 		// Initiate connections with all ranks below me
 		for (int i = rank + 1; i < ipList.size(); i++) {
 			nodes[i] = NodeSocket.openLater(ipList.get(i), PORT_RANGE_START + i, rank);
 		}
-		
+
 		// Accept connections from all ranks above me
 		ServerSocket serverSocket = new ServerSocket(port);
 		serverSocket.setSoTimeout(500);
-		
+
 		// Listen for new nodes
 		while (!isReady()) {
 			try {
@@ -92,7 +93,7 @@ public class NetworkCommunicator implements Communicator {
 		}
 		return true;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void runTask(Class<? extends Task> task) {
 		try {
@@ -100,16 +101,17 @@ public class NetworkCommunicator implements Communicator {
 			if (rank() == 0) {
 				// Build class definition from runnable
 				cls = SerializedClass.fromClass(task);
-				
+
 				// Broadcast class definition to all nodes
 				cls = one2all_broadcast(0, cls, SerializedClass.class);
-				
+
 			} else {
 				// Receive class definition from node 0
 				cls = one2all_broadcast(0, cls, SerializedClass.class);
-	
+
 				// Build class from class definition
-				SerializedClassLoader classLoader = new SerializedClassLoader(SerializedClassLoader.class.getClassLoader());
+				SerializedClassLoader classLoader = new SerializedClassLoader(
+						SerializedClassLoader.class.getClassLoader());
 				task = classLoader.loadClass(cls);
 			}
 			// Instantiate class
@@ -124,6 +126,7 @@ public class NetworkCommunicator implements Communicator {
 			e.printStackTrace();
 		}
 	}
+
 	@Override
 	public int rank() {
 		return rank;
@@ -136,7 +139,7 @@ public class NetworkCommunicator implements Communicator {
 
 	@Override
 	public boolean topology(int i, int j) {
-		//Fully connected
+		// Fully connected
 		return true;
 	}
 
@@ -160,16 +163,16 @@ public class NetworkCommunicator implements Communicator {
 		if (!topology(source, rank)) {
 			throw new Error("Topology violation! " + rank + " cannot recv from " + source);
 		}
-		
+
 		if (type.isPrimitive()) {
 			type = PrimitiveBoxer.get(type);
 		}
-		
+
 		try {
 			ObjectInputStream i = new ObjectInputStream(nodes[source].is);
 			Object obj = i.readObject();
 			if (type.isInstance(obj)) {
-				//lol type safety
+				// lol type safety
 				return (T) obj;
 			} else {
 				throw new ClassNotFoundException("Object received was not of type " + type.getName());
@@ -229,6 +232,7 @@ public class NetworkCommunicator implements Communicator {
 		}
 		return list;
 	}
+
 	@Override
 	public void close() {
 		all2all_broadcast(0, Integer.class);
