@@ -14,13 +14,13 @@ import psimj.PrimitiveBoxer;
 import psimj.Task;
 
 /**
- * A Communicator for providing communication utilities across multiple networked machines
+ * A Communicator for providing communication utilities across multiple
+ * networked machines
  * 
  * @author Kyle Moy
  *
  */
 public class NetworkCommunicator implements Communicator {
-	public static final int ALL_NODES = Integer.MIN_VALUE;
 	public static final int PORT_RANGE_START = 8195;
 	private NodeSocket[] nodes;
 	private int port;
@@ -28,59 +28,21 @@ public class NetworkCommunicator implements Communicator {
 	private int nprocs;
 
 	/**
-	 * Constructs a NetworkCommunicator with the specified number of instances by querying the specified pool server
-	 * @param numNodes the number of nodes to connect
-	 * @param poolHostAddress the address of the pool host
-	 * @param poolHostPort the port of the pool host
-	 * @throws IOException if connecting to the pool host or any node fails
-	 */
-	public NetworkCommunicator(int numNodes, String poolHostAddress, int poolHostPort) throws IOException {
-		// Connect to pool host
-		NodeSocket hostSocket = NodeSocket.openNow(poolHostAddress, poolHostPort);
-
-		// Request n nodes from pool
-		hostSocket.os.writeInt(numNodes);
-
-		// Pool responds with rank - should be 0, negative response means
-		// failure
-		rank = hostSocket.is.readInt();
-		if (rank != 0) {
-			System.err.println("Insufficient nodes for pool size " + hostSocket);
-			return;
-		}
-
-		// Receive node info from pool
-		List<String> ipList = new ArrayList<String>();
-		int size = hostSocket.is.readInt();
-		for (int i = 0; i < size; i++) {
-			int bufSize = hostSocket.is.readInt();
-			byte[] buf = new byte[bufSize];
-			hostSocket.is.readFully(buf);
-			ipList.add(new String(buf));
-		}
-
-		connectNodes(ipList);
-	}
-
-	/**
-	 * Constructs a NetworkCommunicator with nodes at the specified list of addresses
-	 * @param nodeAddressList the list of network addresses to nodes to connect
-	 * @param rank the rank of this Communicator
-	 * @throws IOException if connecting to the pool host or any node fails
+	 * Constructs a NetworkCommunicator with nodes at the specified list of
+	 * addresses
+	 * 
+	 * @param nodeAddressList
+	 *            the list of network addresses to nodes to connect
+	 * @param rank
+	 *            the rank of this Communicator
+	 * @throws IOException
+	 *             if connecting to the pool host or any node fails
 	 */
 	public NetworkCommunicator(List<String> nodeAddressList, int rank) throws IOException {
 		this.rank = rank;
-		connectNodes(nodeAddressList);
-	}
-
-	/**
-	 * Establishes connections between NetworkCommunicators
-	 * @param nodeAddressList the list of network addresses to nodes to connect
-	 * @throws IOException if any connection fails
-	 */
-	private void connectNodes(List<String> nodeAddressList) throws IOException {
-		nodes = new NodeSocket[nodeAddressList.size()];
 		this.port = PORT_RANGE_START + rank;
+
+		nodes = new NodeSocket[nodeAddressList.size()];
 		nprocs = nodeAddressList.size();
 
 		// Create dummy connection with self
@@ -120,7 +82,7 @@ public class NetworkCommunicator implements Communicator {
 		}
 		return true;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void runTask(Class<? extends Task> task) {
 		try {
@@ -210,8 +172,9 @@ public class NetworkCommunicator implements Communicator {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> T one2all_broadcast(int source, T data, Class<T> type) {
+	public <T extends Serializable> T one2all_broadcast(int source, Serializable data, Class<T> type) {
 		if (rank() == source) {
 			for (int i = 0; i < nprocs(); i++) {
 				if (i != rank()) {
@@ -221,11 +184,12 @@ public class NetworkCommunicator implements Communicator {
 		} else {
 			return recv(source, type);
 		}
-		return data;
+		return (T) data;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type) {
+	public <T extends Serializable> List<T> all2one_collect(int dest, Serializable data, Class<T> type) {
 		if (rank() != dest) {
 			send(dest, data);
 		} else {
@@ -234,7 +198,7 @@ public class NetworkCommunicator implements Communicator {
 				if (i != rank()) {
 					list.add(recv(i, type));
 				} else {
-					list.add(data);
+					list.add((T) data);
 				}
 			}
 			return list;
@@ -242,8 +206,9 @@ public class NetworkCommunicator implements Communicator {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type) {
+	public <T extends Serializable> List<T> all2all_broadcast(Serializable data, Class<T> type) {
 		for (int i = 0; i < nprocs(); i++) {
 			if (i != rank()) {
 				send(i, data);
@@ -254,7 +219,7 @@ public class NetworkCommunicator implements Communicator {
 			if (i != rank()) {
 				list.add(recv(i, type));
 			} else {
-				list.add(data);
+				list.add((T) data);
 			}
 		}
 		return list;

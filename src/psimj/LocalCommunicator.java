@@ -14,7 +14,8 @@ import java.util.concurrent.Executors;
 import psimj.Topology.TopologyViolationException;
 
 /**
- * A Communicator for simulating communications across multiple machines by using multithreading
+ * A Communicator for simulating communications across multiple machines by
+ * using multithreading
  * 
  * @author Kyle Moy
  *
@@ -29,7 +30,9 @@ public class LocalCommunicator implements Communicator {
 	private Topology topology;
 
 	/**
-	 * Constructs n LocalCommunicators that simulate the specified network topology
+	 * Constructs n LocalCommunicators that simulate the specified network
+	 * topology
+	 * 
 	 * @param numProcs
 	 * @param topology
 	 */
@@ -70,12 +73,19 @@ public class LocalCommunicator implements Communicator {
 	}
 
 	/**
-	 * Constructs a LocalCommunicator with the specified topology and connections
-	 * @param r the rank of this Communicator
-	 * @param n the total number of connected Communicators
-	 * @param t the topology to simulate
-	 * @param i the InputStreams from all other connected Communicators
-	 * @param o the OutputStreams to all other connected Communicators
+	 * Constructs a LocalCommunicator with the specified topology and
+	 * connections
+	 * 
+	 * @param r
+	 *            the rank of this Communicator
+	 * @param n
+	 *            the total number of connected Communicators
+	 * @param t
+	 *            the topology to simulate
+	 * @param i
+	 *            the InputStreams from all other connected Communicators
+	 * @param o
+	 *            the OutputStreams to all other connected Communicators
 	 */
 	private LocalCommunicator(int r, int n, Topology t, PipedInputStream[] i, PipedOutputStream[] o) {
 		rank = r;
@@ -129,7 +139,6 @@ public class LocalCommunicator implements Communicator {
 		}
 
 		try {
-			System.out.println("Sending: " + data.getClass().getName());
 			ObjectOutputStream o = new ObjectOutputStream(os[dest]);
 			o.writeObject(data);
 			o.flush();
@@ -164,8 +173,9 @@ public class LocalCommunicator implements Communicator {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> T one2all_broadcast(int source, T data, Class<T> type)
+	public <T extends Serializable> T one2all_broadcast(int source, Serializable data, Class<T> type)
 			throws TopologyViolationException {
 		if (rank() == source) {
 			for (int i = 0; i < nprocs(); i++) {
@@ -176,11 +186,12 @@ public class LocalCommunicator implements Communicator {
 		} else {
 			return recv(source, type);
 		}
-		return data;
+		return (T) data;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> List<T> all2one_collect(int dest, T data, Class<T> type)
+	public <T extends Serializable> List<T> all2one_collect(int dest, Serializable data, Class<T> type)
 			throws TopologyViolationException {
 		if (rank() != dest) {
 			send(dest, data);
@@ -190,7 +201,7 @@ public class LocalCommunicator implements Communicator {
 				if (i != rank()) {
 					list.add(recv(i, type));
 				} else {
-					list.add(data);
+					list.add((T) data);
 				}
 			}
 			return list;
@@ -198,8 +209,10 @@ public class LocalCommunicator implements Communicator {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T extends Serializable> List<T> all2all_broadcast(T data, Class<T> type) throws TopologyViolationException {
+	public <T extends Serializable> List<T> all2all_broadcast(Serializable data, Class<T> type)
+			throws TopologyViolationException {
 		for (int i = 0; i < nprocs(); i++) {
 			if (i != rank()) {
 				send(i, data);
@@ -210,7 +223,7 @@ public class LocalCommunicator implements Communicator {
 			if (i != rank()) {
 				list.add(recv(i, type));
 			} else {
-				list.add(data);
+				list.add((T) data);
 			}
 		}
 		return list;

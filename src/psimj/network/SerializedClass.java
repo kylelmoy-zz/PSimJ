@@ -15,10 +15,13 @@ class SerializedClass implements Serializable {
 	private static final long serialVersionUID = -5882189879957417026L;
 	private byte[] data;
 	private String name;
-	
+
 	/**
-	 * Constructs a SerializedClass from the specified Class already loaded in the JVM
-	 * @param type the Class to serialize
+	 * Constructs a SerializedClass from the specified Class already loaded in
+	 * the JVM
+	 * 
+	 * @param type
+	 *            the Class to serialize
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
@@ -36,11 +39,11 @@ class SerializedClass implements Serializable {
 				break;
 			out.write(buffer, 0, r);
 		}
-		
+
 		this.data = out.toByteArray();
 		this.name = type.getName();
 	}
-	
+
 	/**
 	 * @return the name of the Class
 	 */

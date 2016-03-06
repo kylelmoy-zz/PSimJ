@@ -28,7 +28,9 @@ public class PrimitiveBoxer {
 
 	/**
 	 * Looks up the wrapper class for a primitive class
-	 * @param c the primitive class
+	 * 
+	 * @param c
+	 *            the primitive class
 	 * @return the wrapper Class
 	 */
 	@SuppressWarnings("rawtypes")

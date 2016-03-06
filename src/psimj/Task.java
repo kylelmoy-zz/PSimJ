@@ -9,7 +9,9 @@ package psimj;
 public interface Task {
 	/**
 	 * Executes the code associated with this task
-	 * @param comm the Communicator to be passed
+	 * 
+	 * @param comm
+	 *            the Communicator to be passed
 	 */
 	void run(Communicator comm);
 }

@@ -7,9 +7,10 @@ package psimj.network;
  *
  */
 class SerializedClassLoader extends ClassLoader {
-	
+
 	/**
 	 * Constructs a SerializedClassLoader
+	 * 
 	 * @param parent
 	 */
 	public SerializedClassLoader(ClassLoader parent) {
@@ -18,7 +19,9 @@ class SerializedClassLoader extends ClassLoader {
 
 	/**
 	 * Loads a Class from a SerializedClass
-	 * @param type the SerializedClass to load
+	 * 
+	 * @param type
+	 *            the SerializedClass to load
 	 * @return the loaded Class
 	 * @throws ClassNotFoundException
 	 */

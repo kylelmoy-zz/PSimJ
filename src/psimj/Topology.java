@@ -9,6 +9,7 @@ package psimj;
 public interface Topology {
 	/**
 	 * Checks if the specified nodes could communicate in this topology
+	 * 
 	 * @param i
 	 * @param j
 	 * @return true if the nodes could communicate
