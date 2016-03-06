@@ -13,6 +13,12 @@ import psimj.Communicator;
 import psimj.PrimitiveBoxer;
 import psimj.Task;
 
+/**
+ * A Communicator for providing communication utilities across multiple networked machines
+ * 
+ * @author Kyle Moy
+ *
+ */
 public class NetworkCommunicator implements Communicator {
 	public static final int ALL_NODES = Integer.MIN_VALUE;
 	public static final int PORT_RANGE_START = 8195;
@@ -21,12 +27,19 @@ public class NetworkCommunicator implements Communicator {
 	private int rank;
 	private int nprocs;
 
-	public NetworkCommunicator(int n, String host, int port) throws IOException {
+	/**
+	 * Constructs a NetworkCommunicator with the specified number of instances by querying the specified pool server
+	 * @param numNodes the number of nodes to connect
+	 * @param poolHostAddress the address of the pool host
+	 * @param poolHostPort the port of the pool host
+	 * @throws IOException if connecting to the pool host or any node fails
+	 */
+	public NetworkCommunicator(int numNodes, String poolHostAddress, int poolHostPort) throws IOException {
 		// Connect to pool host
-		NodeSocket hostSocket = NodeSocket.openNow(host, port);
+		NodeSocket hostSocket = NodeSocket.openNow(poolHostAddress, poolHostPort);
 
 		// Request n nodes from pool
-		hostSocket.os.writeInt(n);
+		hostSocket.os.writeInt(numNodes);
 
 		// Pool responds with rank - should be 0, negative response means
 		// failure
@@ -49,22 +62,33 @@ public class NetworkCommunicator implements Communicator {
 		connectNodes(ipList);
 	}
 
-	public NetworkCommunicator(List<String> ipList, int rank) throws IOException {
+	/**
+	 * Constructs a NetworkCommunicator with nodes at the specified list of addresses
+	 * @param nodeAddressList the list of network addresses to nodes to connect
+	 * @param rank the rank of this Communicator
+	 * @throws IOException if connecting to the pool host or any node fails
+	 */
+	public NetworkCommunicator(List<String> nodeAddressList, int rank) throws IOException {
 		this.rank = rank;
-		connectNodes(ipList);
+		connectNodes(nodeAddressList);
 	}
 
-	private void connectNodes(List<String> ipList) throws IOException {
-		nodes = new NodeSocket[ipList.size()];
+	/**
+	 * Establishes connections between NetworkCommunicators
+	 * @param nodeAddressList the list of network addresses to nodes to connect
+	 * @throws IOException if any connection fails
+	 */
+	private void connectNodes(List<String> nodeAddressList) throws IOException {
+		nodes = new NodeSocket[nodeAddressList.size()];
 		this.port = PORT_RANGE_START + rank;
-		nprocs = ipList.size();
+		nprocs = nodeAddressList.size();
 
 		// Create dummy connection with self
 		nodes[rank] = new NodeSocket();
 
 		// Initiate connections with all ranks below me
-		for (int i = rank + 1; i < ipList.size(); i++) {
-			nodes[i] = NodeSocket.openLater(ipList.get(i), PORT_RANGE_START + i, rank);
+		for (int i = rank + 1; i < nodeAddressList.size(); i++) {
+			nodes[i] = NodeSocket.openLater(nodeAddressList.get(i), PORT_RANGE_START + i, rank);
 		}
 
 		// Accept connections from all ranks above me
@@ -85,6 +109,9 @@ public class NetworkCommunicator implements Communicator {
 		serverSocket.close();
 	}
 
+	/**
+	 * @return true if all nodes are connected and can communicate
+	 */
 	public boolean isReady() {
 		for (NodeSocket node : nodes) {
 			if (node == null || !node.isReady()) {
@@ -93,14 +120,14 @@ public class NetworkCommunicator implements Communicator {
 		}
 		return true;
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public void runTask(Class<? extends Task> task) {
 		try {
 			SerializedClass cls = null;
 			if (rank() == 0) {
 				// Build class definition from runnable
-				cls = SerializedClass.fromClass(task);
+				cls = new SerializedClass(task);
 
 				// Broadcast class definition to all nodes
 				cls = one2all_broadcast(0, cls, SerializedClass.class);

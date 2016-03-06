@@ -3,9 +3,15 @@ package psimj;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A utility for boxing primitives
+ * 
+ * @author Kyle Moy
+ *
+ */
 public class PrimitiveBoxer {
 	@SuppressWarnings("rawtypes")
-	static Map<Class, Class> boxTypes = new HashMap<Class, Class>();
+	private static Map<Class, Class> boxTypes = new HashMap<Class, Class>();
 
 	static {
 		// Map primitives to their boxes
@@ -20,6 +26,11 @@ public class PrimitiveBoxer {
 		boxTypes.put(void.class, Void.class);
 	}
 
+	/**
+	 * Looks up the wrapper class for a primitive class
+	 * @param c the primitive class
+	 * @return the wrapper Class
+	 */
 	@SuppressWarnings("rawtypes")
 	public static Class get(Class c) {
 		return boxTypes.get(c);

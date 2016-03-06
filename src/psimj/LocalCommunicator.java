@@ -14,20 +14,13 @@ import java.util.concurrent.Executors;
 import psimj.Topology.TopologyViolationException;
 
 /**
+ * A Communicator for simulating communications across multiple machines by using multithreading
+ * 
+ * @author Kyle Moy
  *
  */
 public class LocalCommunicator implements Communicator {
 
-	/**
-	 * Creates and runs simulated parallel processes
-	 * 
-	 * @param n
-	 *            the number of parallel processes
-	 * @param topology
-	 *            the simulated network topology of the system
-	 * @param task
-	 *            the Java class containing the code to be run
-	 */
 	private static LocalCommunicator[] instances;
 	private PipedInputStream[] is;
 	private PipedOutputStream[] os;
@@ -35,20 +28,25 @@ public class LocalCommunicator implements Communicator {
 	private int nprocs;
 	private Topology topology;
 
-	public LocalCommunicator(int n, Topology t) {
+	/**
+	 * Constructs n LocalCommunicators that simulate the specified network topology
+	 * @param numProcs
+	 * @param topology
+	 */
+	public LocalCommunicator(int numProcs, Topology topology) {
 		rank = 0;
-		nprocs = n;
-		topology = t;
+		nprocs = numProcs;
+		this.topology = topology;
 
 		PipedOutputStream[][] outputStreams;
 		PipedInputStream[][] inputStreams;
 
 		// Create communication pipes
 		try {
-			outputStreams = new PipedOutputStream[n][n];
-			inputStreams = new PipedInputStream[n][n];
-			for (int i = 0; i < n; i++) {
-				for (int j = 0; j < n; j++) {
+			outputStreams = new PipedOutputStream[numProcs][numProcs];
+			inputStreams = new PipedInputStream[numProcs][numProcs];
+			for (int i = 0; i < numProcs; i++) {
+				for (int j = 0; j < numProcs; j++) {
 					// Assert topology
 					if (topology.valid(i, j)) {
 						// Create pipes between valid nodes
@@ -62,15 +60,23 @@ public class LocalCommunicator implements Communicator {
 			return;
 		}
 
-		instances = new LocalCommunicator[n];
+		instances = new LocalCommunicator[numProcs];
 		is = inputStreams[0];
 		os = outputStreams[0];
 		instances[0] = this;
-		for (int i = 0; i < n; i++) {
-			instances[i] = new LocalCommunicator(i, n, t, inputStreams[i], outputStreams[i]);
+		for (int i = 0; i < numProcs; i++) {
+			instances[i] = new LocalCommunicator(i, numProcs, topology, inputStreams[i], outputStreams[i]);
 		}
 	}
 
+	/**
+	 * Constructs a LocalCommunicator with the specified topology and connections
+	 * @param r the rank of this Communicator
+	 * @param n the total number of connected Communicators
+	 * @param t the topology to simulate
+	 * @param i the InputStreams from all other connected Communicators
+	 * @param o the OutputStreams to all other connected Communicators
+	 */
 	private LocalCommunicator(int r, int n, Topology t, PipedInputStream[] i, PipedOutputStream[] o) {
 		rank = r;
 		nprocs = n;

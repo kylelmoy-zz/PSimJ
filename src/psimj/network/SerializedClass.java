@@ -5,26 +5,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
+/**
+ * Serializes Classes for network communication
+ * 
+ * @author Kyle Moy
+ *
+ */
 class SerializedClass implements Serializable {
 	private static final long serialVersionUID = -5882189879957417026L;
 	private byte[] data;
 	private String name;
-
-	public SerializedClass(String name, byte[] data) {
-		this.name = name;
-		this.data = data;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public byte[] getData() {
-		return data;
-	}
-
+	
+	/**
+	 * Constructs a SerializedClass from the specified Class already loaded in the JVM
+	 * @param type the Class to serialize
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
 	@SuppressWarnings("rawtypes")
-	public static SerializedClass fromClass(Class type) throws IOException, ClassNotFoundException {
+	public SerializedClass(Class type) throws IOException, ClassNotFoundException {
 		InputStream is = type.getResourceAsStream(type.getName() + ".class");
 		if (is == null) {
 			throw new ClassNotFoundException(type.getName() + " is not visible. Task must be public and static.");
@@ -37,7 +36,22 @@ class SerializedClass implements Serializable {
 				break;
 			out.write(buffer, 0, r);
 		}
-		byte[] data = out.toByteArray();
-		return new SerializedClass(type.getName(), data);
+		
+		this.data = out.toByteArray();
+		this.name = type.getName();
+	}
+	
+	/**
+	 * @return the name of the Class
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @return the compiled bytecode of the Class
+	 */
+	public byte[] getData() {
+		return data;
 	}
 }
