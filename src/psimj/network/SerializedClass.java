@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author Kyle Moy
  *
  */
-class SerializedClass implements Serializable {
+public class SerializedClass implements Serializable {
 	private static final long serialVersionUID = -5882189879957417026L;
 	private byte[] data;
 	private String name;
@@ -27,9 +27,10 @@ class SerializedClass implements Serializable {
 	 */
 	@SuppressWarnings("rawtypes")
 	public SerializedClass(Class type) throws IOException, ClassNotFoundException {
-		InputStream is = type.getResourceAsStream(type.getName() + ".class");
+		String resourceName = "/" + type.getName().replace(".", "/");
+		InputStream is = type.getClass().getResourceAsStream(resourceName + ".class");
 		if (is == null) {
-			throw new ClassNotFoundException(type.getName() + " is not visible. Task must be public and static.");
+			throw new ClassNotFoundException((resourceName + ".class") + " not found.");
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		byte[] buffer = new byte[1024];
@@ -39,9 +40,8 @@ class SerializedClass implements Serializable {
 				break;
 			out.write(buffer, 0, r);
 		}
-
-		this.data = out.toByteArray();
 		this.name = type.getName();
+		this.data = out.toByteArray();
 	}
 
 	/**
