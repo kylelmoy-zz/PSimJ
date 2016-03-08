@@ -103,5 +103,10 @@ public interface Communicator {
 	/**
 	 * Blocks until all nodes are ready, then closes communications.
 	 */
+	void finish();
+	
+	/**
+	 * Forces connections to close.
+	 */
 	void close();
 }

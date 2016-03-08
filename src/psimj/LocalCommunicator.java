@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import psimj.Topology.TopologyViolationException;
+import psimj.network.NodeSocket;
 
 /**
  * A Communicator for simulating communications across multiple machines by
@@ -96,9 +97,10 @@ public class LocalCommunicator implements Communicator {
 	}
 
 	@Override
-	public void runTask(Class<? extends Task> task) {
+	public void runTask(final Class<? extends Task> task) {
 		// Run task objects on separate threads
 		ExecutorService executor = Executors.newFixedThreadPool(nprocs());
+		
 		for (int i = 0; i < nprocs(); i++) {
 			final int j = i;
 			executor.submit(new java.lang.Runnable() {
@@ -229,6 +231,12 @@ public class LocalCommunicator implements Communicator {
 		return list;
 	}
 
+	@Override
+	public void finish() {
+		is = null;
+		os = null;
+	}
+	
 	@Override
 	public void close() {
 		is = null;

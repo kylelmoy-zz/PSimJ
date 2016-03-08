@@ -226,12 +226,19 @@ public class NetworkCommunicator implements Communicator {
 	}
 
 	@Override
-	public void close() {
+	public void finish() {
 		all2all_broadcast(0, Integer.class);
 		for (NodeSocket node : nodes) {
 			node.close();
 		}
 		nodes = null;
 	}
-
+	
+	@Override
+	public void close() {
+		for (NodeSocket node : nodes) {
+			node.close();
+		}
+		nodes = null;
+	}
 }

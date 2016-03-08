@@ -25,6 +25,9 @@ public class NodeSocket implements Runnable {
 	public String ip;
 	public int port;
 	public final int rank;
+	
+	public String osName;
+	public int cores;
 
 	/**
 	 * Localhost connection constructor
